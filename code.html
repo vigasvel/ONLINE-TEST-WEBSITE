@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EduTest ULTRA PRO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI",sans-serif}
+
+body{
+  min-height:100vh;
+  background:linear-gradient(135deg,#1e3a8a,#0f172a);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:#fff;
+}
+
+.app{
+  width:95%;
+  max-width:950px;
+  background:rgba(255,255,255,0.18);
+  backdrop-filter:blur(18px);
+  border-radius:25px;
+  padding:30px;
+  box-shadow:0 50px 100px rgba(0,0,0,.6);
+}
+
+header{text-align:center;margin-bottom:20px}
+header h1{
+  font-size:38px;
+  background:linear-gradient(90deg,#facc15,#f59e0b,#fde68a);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
+.card{
+  background:rgba(255,255,255,.15);
+  padding:20px;
+  border-radius:20px;
+  margin-bottom:20px;
+}
+
+input,button{
+  width:100%;
+  padding:14px;
+  margin-top:12px;
+  border:none;
+  border-radius:12px;
+}
+
+button{
+  background:linear-gradient(90deg,#22c55e,#4ade80);
+  font-weight:bold;
+  cursor:pointer;
+}
+button:hover{transform:scale(1.03)}
+
+.secondary{
+  background:linear-gradient(90deg,#6366f1,#8b5cf6)
+}
+
+.progress{
+  height:12px;
+  background:rgba(255,255,255,.3);
+  border-radius:10px;
+  overflow:hidden;
+}
+.progress-bar{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#22c55e,#06b6d4);
+  transition:1s;
+}
+
+.result{
+  font-size:26px;
+  text-align:center;
+  font-weight:bold;
+}
+
+label{display:block;margin-top:8px}
+.timer{text-align:right;font-weight:bold}
+
+/* 🎉 Confetti */
+.confetti{
+  position:fixed;
+  width:10px;
+  height:10px;
+  top:-10px;
+  animation:fall linear forwards;
+  z-index:9999;
+}
+@keyframes fall{
+  to{transform:translateY(110vh) rotate(720deg);opacity:0}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header>
+  <h1>EduTest ULTRA PRO</h1>
+  <p>Advanced Online Examination System</p>
+</header>
+
+<!-- LOGIN -->
+<div class="card" id="loginCard">
+  <input id="studentName" placeholder="Student Name">
+  <input id="regNo" placeholder="Register Number">
+  <input id="dob" placeholder="Date of Birth (YYYY-MM-DD)">
+  <button onclick="startExam()">Start Exam</button>
+</div>
+
+<!-- EXAM -->
+<div class="card" id="examCard" style="display:none">
+  <div class="timer">⏱ Time: <span id="time">60</span>s</div>
+
+  <div class="progress">
+    <div id="progressBar" class="progress-bar"></div>
+  </div>
+
+  <p>1. HTML stands for?</p>
+  <label><input type="radio" name="q1" value="1"> Hyper Text Markup Language</label>
+  <label><input type="radio" name="q1" value="0"> High Text Machine Language</label>
+
+  <p>2. Which tag is used for forms?</p>
+  <label><input type="radio" name="q2" value="1"> &lt;form&gt;</label>
+  <label><input type="radio" name="q2" value="0"> &lt;table&gt;</label>
+
+  <p>3. Validation attribute?</p>
+  <label><input type="radio" name="q3" value="1"> required</label>
+  <label><input type="radio" name="q3" value="0"> method</label>
+
+  <button onclick="submitExam()">Submit Exam</button>
+</div>
+
+<!-- RESULT -->
+<div class="card" id="resultCard" style="display:none">
+  <p id="resultText" class="result">🔒 Result Locked</p>
+
+  <input id="dobUnlock" placeholder="Enter DOB to Unlock">
+  <button onclick="unlockResult()">Unlock Result</button>
+
+  <button onclick="downloadCertificate()">🏆 Download Premium Certificate</button>
+  <button class="secondary" onclick="goHome()">🏠 Home</button>
+</div>
+
+</div>
+
+<script>
+const nameInput=document.getElementById("studentName");
+const regInput=document.getElementById("regNo");
+const dobInput=document.getElementById("dob");
+const dobUnlock=document.getElementById("dobUnlock");
+
+const loginCard=document.getElementById("loginCard");
+const examCard=document.getElementById("examCard");
+const resultCard=document.getElementById("resultCard");
+
+const progressBar=document.getElementById("progressBar");
+const resultText=document.getElementById("resultText");
+const timeSpan=document.getElementById("time");
+
+let storedDOB="", score=0, timer=60, interval;
+const TOTAL=3;
+
+function startExam(){
+  if(!nameInput.value||!regInput.value||!dobInput.value){
+    alert("Fill all details"); return;
+  }
+  storedDOB=dobInput.value.trim();
+  timer=60; score=0;
+  loginCard.style.display="none";
+  examCard.style.display="block";
+  startTimer();
+}
+
+function startTimer(){
+  timeSpan.innerText=timer;
+  interval=setInterval(()=>{
+    timer--;
+    timeSpan.innerText=timer;
+    if(timer<=0){clearInterval(interval);submitExam();}
+  },1000);
+}
+
+function submitExam(){
+  clearInterval(interval);
+  score=0;
+  ["q1","q2","q3"].forEach(q=>{
+    const a=document.querySelector(`input[name="${q}"]:checked`);
+    if(a) score+=Number(a.value);
+  });
+  progressBar.style.width=(score/TOTAL)*100+"%";
+  examCard.style.display="none";
+  resultCard.style.display="block";
+}
+
+function unlockResult(){
+  if(dobUnlock.value.trim()===storedDOB){
+    resultText.innerText =
+      (score>=2?"PASS ✅":"FAIL ❌") + ` | Score: ${score}/${TOTAL}`;
+    if(score===TOTAL) blastCrackers();
+  }else alert("DOB does not match");
+}
+
+function blastCrackers(){
+  for(let i=0;i<140;i++){
+    const c=document.createElement("div");
+    c.className="confetti";
+    c.style.left=Math.random()*100+"vw";
+    c.style.background=`hsl(${Math.random()*360},100%,50%)`;
+    c.style.animationDuration=(Math.random()*2+2)+"s";
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),4000);
+  }
+}
+
+/* 🏆 PREMIUM COLORFUL CERTIFICATE */
+function downloadCertificate(){
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF("landscape");
+
+  /* Gradient-like background blocks */
+  pdf.setFillColor(88,28,135); // purple
+  pdf.rect(0,0,297,210,"F");
+  pdf.setFillColor(245,158,11); // gold
+  pdf.rect(0,0,297,30,"F");
+
+  /* Inner white panel */
+  pdf.setFillColor(255,255,255);
+  pdf.rect(20,35,257,155,"F");
+
+  /* Gold border */
+  pdf.setDrawColor(202,138,4);
+  pdf.setLineWidth(5);
+  pdf.rect(20,35,257,155);
+
+  /* Title */
+  pdf.setTextColor(88,28,135);
+  pdf.setFont("times","bold");
+  pdf.setFontSize(32);
+  pdf.text("CERTIFICATE OF EXCELLENCE",148,60,{align:"center"});
+
+  /* Student Name */
+  pdf.setFontSize(26);
+  pdf.setTextColor(17,24,39);
+  pdf.text(nameInput.value,148,85,{align:"center"});
+
+  /* Body text */
+  pdf.setFontSize(14);
+  pdf.text(
+    "has successfully completed the assessment conducted by",
+    148,105,{align:"center"}
+  );
+
+  pdf.setFontSize(18);
+  pdf.setTextColor(37,99,235);
+  pdf.text("EduTest ULTRA PRO",148,120,{align:"center"});
+
+  pdf.setFontSize(16);
+  pdf.setTextColor(0,0,0);
+  pdf.text(`Score: ${score}/${TOTAL}`,148,138,{align:"center"});
+  pdf.text(`Result: ${score>=2?"PASS":"FAIL"}`,148,150,{align:"center"});
+
+  /* Ribbon */
+  pdf.setFillColor(245,158,11);
+  pdf.rect(110,155,76,10,"F");
+  pdf.setTextColor(255,255,255);
+  pdf.setFontSize(12);
+  pdf.text("ACADEMIC DISTINCTION",148,162,{align:"center"});
+
+  /* Signatures */
+  pdf.setTextColor(0,0,0);
+  pdf.line(50,175,120,175);
+  pdf.line(180,175,250,175);
+  pdf.text("Dr. R. Kumar",85,182,{align:"center"});
+  pdf.text("A. Suresh",215,182,{align:"center"});
+  pdf.text("Exam Controller",85,190,{align:"center"});
+  pdf.text("Authorized Signatory",215,190,{align:"center"});
+
+  pdf.save("EduTest_Premium_Certificate.pdf");
+}
+
+function goHome(){
+  loginCard.style.display="block";
+  examCard.style.display="none";
+  resultCard.style.display="none";
+  nameInput.value=regInput.value=dobInput.value=dobUnlock.value="";
+  progressBar.style.width="0%";
+  resultText.innerText="🔒 Result Locked";
+}
+</script>
+
+</body>
+</html>
